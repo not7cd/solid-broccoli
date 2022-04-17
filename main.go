@@ -3,70 +3,27 @@ package main
 import (
 	"bufio"
 	"database/sql"
+	"flag"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
-const PrefixCmd = '.'
-
-type Query byte
-
-const (
-	QueryAdd     Query = '+'
-	QueryRandom  Query = '.' // no arg
-	QueryInspect Query = '?' // no arg
-)
-
-func processQuery(s string) {
-	firstWs := strings.IndexByte(s, ' ')
-	var q int
-	fmt.Printf("Processing %s, index %s\n", s, firstWs)
-
-	if firstWs == -1 {
-		q = len(s) - 1
-		keyword := s[:q]
-		switch Query(s[q]) {
-		case QueryRandom:
-			log.Printf("Get random %s\n", keyword)
-			sentence, err := getRandomSentence(keyword)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			fmt.Println(sentence)
-		case QueryInspect:
-			count, err := getSentenceCount(keyword)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			fmt.Printf("Keyword %s\nhas %d sentences\n", keyword, count)
-		default:
-			log.Println("How we got here? Got no args")
-		}
-	} else {
-		q = firstWs - 1
-		switch Query(s[q]) {
-		case QueryAdd:
-			log.Printf("add %s\n", s[firstWs:])
-			addSentence(s[:q], strings.TrimSpace(s[firstWs:]))
-		default:
-			log.Println("How we got here?")
-		}
-	}
-
+func init() {
+	flag.StringVar(&token, "t", "", "Bot Token")
+	flag.Parse()
 }
 
-const fileName = "sqlite.db"
+var token string
+var buffer = make([][]byte, 0)
+
+const fileName = "solid-broccoli.db"
 
 func main() {
-	log.Println("Hey")
-
-	in := bufio.NewReader(os.Stdin)
-
-	_ = os.Remove(fileName)
 	db, err := sql.Open("sqlite3", fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -77,6 +34,53 @@ func main() {
 		log.Fatal(err)
 	}
 
+	discord()
+}
+
+func discord() {
+	if token == "" {
+		fmt.Println("No token provided. Please run: airhorn -t <bot token>")
+		return
+	}
+
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + token)
+	if err != nil {
+		fmt.Println("Error creating Discord session: ", err)
+		return
+	}
+
+	// Register ready as a callback for the ready events.
+	dg.AddHandler(ready)
+
+	// Register messageCreate as a callback for the messageCreate events.
+	dg.AddHandler(messageCreate)
+
+	//// Register guildCreate as a callback for the guildCreate events.
+	//dg.AddHandler(guildCreate)
+
+	// We need information about guilds (which includes their channels),
+	// messages and voice states.
+	dg.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates
+
+	// Open the websocket and begin listening.
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("Error opening Discord session: ", err)
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Airhorn is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+}
+
+func cli() {
+	in := bufio.NewReader(os.Stdin)
 	for {
 		line, err := in.ReadString('\n')
 		if err != nil {
