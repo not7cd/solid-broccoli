@@ -3,8 +3,6 @@ package main
 import (
 	"bufio"
 	"database/sql"
-	"flag"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
 	"os"
@@ -15,18 +13,15 @@ import (
 	"syscall"
 )
 
-func init() {
-	flag.StringVar(&token, "t", "", "Bot Token")
-	flag.Parse()
-}
-
 var token string
-var buffer = make([][]byte, 0)
-
-const fileName = "solid-broccoli.db"
 
 func main() {
-	db, err := sql.Open("sqlite3", fileName)
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := sql.Open("sqlite3", cfg.SqlitePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,19 +31,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	discord()
+	discord(cfg)
 }
 
-func discord() {
+func discord(cfg config.Config) {
+	token = cfg.DiscordToken
+
 	if token == "" {
-		fmt.Println("No discord token provided")
+		log.Println("No discord token provided")
 		return
 	}
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
+		log.Println("Error creating Discord session: ", err)
 		return
 	}
 
@@ -68,11 +65,11 @@ func discord() {
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("Error opening Discord session: ", err)
+		log.Println("Error opening Discord session: ", err)
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Airhorn is now running.  Press CTRL-C to exit.")
+	log.Println("Solid-broccoli is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
