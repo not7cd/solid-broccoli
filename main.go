@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"solidbroccoli/config"
+	"solidbroccoli/graph"
 	"strings"
 	"syscall"
 )
@@ -29,8 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	repository = NewSQLiteRepository(db)
-	if err := repository.Migrate(); err != nil {
+	graph.Repository = graph.NewSQLiteRepository(db)
+	if err := graph.Repository.Migrate(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -39,7 +41,7 @@ func main() {
 
 func discord() {
 	if token == "" {
-		fmt.Println("No token provided. Please run: airhorn -t <bot token>")
+		fmt.Println("No discord token provided")
 		return
 	}
 
@@ -88,9 +90,9 @@ func cli() {
 		}
 		// sanitize it a bit
 		line = strings.TrimSpace(line)
-		if line[0] == PrefixCmd {
+		if line[0] == config.PrefixCmd {
 			log.Printf("Got command\n")
-			processQuery(line[1:])
+			graph.ProcessQuery(line[1:])
 		}
 	}
 }
