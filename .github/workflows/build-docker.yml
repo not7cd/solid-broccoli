@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "::set-env name=IMAGE_NAME::$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')"
+      - run: echo "IMAGE_NAME=$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
         name: Setup variables
       - run: docker build . -t $IMAGE_NAME
         name: Build image
