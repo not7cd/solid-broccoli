@@ -61,7 +61,9 @@ func getSentenceCount(keyword string) (int, error) {
 	return count, nil
 }
 
-func ProcessQuery(s string) (string, error) {
+func ProcessQuery(query string) (string, error) {
+	s := strings.TrimSpace(query)
+
 	firstWs := strings.IndexByte(s, ' ')
 	var q int
 	fmt.Printf("Processing %s, index %d\n", s, firstWs)
