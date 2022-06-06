@@ -34,7 +34,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if m.Type == discordgo.MessageTypeReply && config.Query(query[len(query)-1]) == config.QueryAdd {
 			quotedMsg := m.ReferencedMessage
 
-			if len(quotedMsg.Content) == 0 && len(quotedMsg.Attachments) > 0 {
+			if len(quotedMsg.Content) == 0 {
 				for _, attachment := range quotedMsg.Attachments {
 					query += " " + attachment.URL
 				}
