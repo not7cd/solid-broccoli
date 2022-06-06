@@ -31,7 +31,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, ".") {
 		query := m.Content[1:]
 
-		if m.Type == 19 && config.Query(query[len(query)-1]) == config.QueryAdd {
+		if m.Type == discordgo.MessageTypeReply && config.Query(query[len(query)-1]) == config.QueryAdd {
 			query = query + " " + m.ReferencedMessage.Content
 		}
 		// Find the channel that the message came from.
