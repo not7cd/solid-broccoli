@@ -5,7 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: docker build . -t $GITHUB_REPOSITORY
+      - run: echo "::set-env name=IMAGE_NAME::$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')"
+        name: Setup variables
+      - run: docker build . -t $IMAGE_NAME
+        name: Build image
       - run: echo "::set-output name=TAG::$(git describe --tags 2>/dev/null)"
         name: Check if commit is tagged
         id: check-tag
@@ -19,5 +22,5 @@ jobs:
         name: Push image
         run: |
           TAG=${{ steps.check-tag.outputs.TAG }}
-          docker tag $GITHUB_REPOSITORY $GITHUB_REPOSITORY:$TAG
-          docker push $GITHUB_REPOSITORY:$TAG
+          docker tag $IMAGE_NAME grc.io/$IMAGE_NAME:$TAG
+          docker push gcr.io/$IMAGE_NAME:$TAG
