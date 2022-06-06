@@ -32,7 +32,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		query := m.Content[1:]
 
 		if m.Type == discordgo.MessageTypeReply && config.Query(query[len(query)-1]) == config.QueryAdd {
-			query = query + " " + m.ReferencedMessage.Content
+			quotedMsg := m.ReferencedMessage
+
+			if len(quotedMsg.Content) == 0 && len(quotedMsg.Attachments) > 0 {
+				for _, attachment := range quotedMsg.Attachments {
+					query += " " + attachment.URL
+				}
+			} else {
+				query += " " + quotedMsg.Content
+			}
 		}
 		// Find the channel that the message came from.
 		c, err := s.State.Channel(m.ChannelID)
