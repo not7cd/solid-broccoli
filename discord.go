@@ -31,8 +31,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if strings.HasPrefix(m.Content, ".") {
 		query := m.Content[1:]
 
-		if m.Type == 19 && config.Query(query[len(query)-1]) == config.QueryAdd {
-			query = query + " " + m.ReferencedMessage.Content
+		if m.Type == discordgo.MessageTypeReply && config.Query(query[len(query)-1]) == config.QueryAdd {
+			quotedMsg := m.ReferencedMessage
+
+			if len(quotedMsg.Content) == 0 {
+				for _, attachment := range quotedMsg.Attachments {
+					query += " " + attachment.URL
+				}
+			} else {
+				query += " " + quotedMsg.Content
+			}
 		}
 		// Find the channel that the message came from.
 		c, err := s.State.Channel(m.ChannelID)
